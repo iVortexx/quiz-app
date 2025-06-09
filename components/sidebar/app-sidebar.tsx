@@ -2,12 +2,9 @@
 
 import * as React from "react"
 import {
-    AudioWaveform,
     BookOpen,
     Bot,
-    Command,
     Frame,
-    GalleryVerticalEnd,
     Map,
     PieChart,
     Settings2,
@@ -28,6 +25,7 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
 } from '@/components/ui/sidebar'
+import Link from "next/link";
 
 // This is sample data.
 const data = {
@@ -152,10 +150,10 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:!p-1.5"
                         >
-                            <a href="#">
+                            <Link href="/">
                                 <FileText className="!size-5"/>
                                 <span className="text-base font-semibold">Quizify</span>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

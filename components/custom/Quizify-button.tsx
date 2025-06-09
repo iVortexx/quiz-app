@@ -19,7 +19,7 @@ export interface VioletButtonProps extends Omit<ButtonProps, "variant"> {
     children: React.ReactNode
 }
 
-const VioletButton = forwardRef<HTMLButtonElement, VioletButtonProps>(
+const QuizifyButton = forwardRef<HTMLButtonElement, VioletButtonProps>(
     ({ className, variant = "gradient", children, ...props }, ref) => {
         const variants: Record<VioletVariant, string> = {
             gradient:
@@ -61,6 +61,6 @@ const VioletButton = forwardRef<HTMLButtonElement, VioletButtonProps>(
     },
 )
 
-VioletButton.displayName = "VioletButton"
+QuizifyButton.displayName = "QuizifyButton"
 
-export { VioletButton }
+export { QuizifyButton }
