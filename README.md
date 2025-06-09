@@ -1,0 +1,1 @@
+This app is using next.js v15 with typescript, it also uses tailwindcss, shadcn and component library
