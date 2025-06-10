@@ -1,170 +1,102 @@
+
 "use client"
 
 import * as React from "react"
+import { usePathname } from 'next/navigation'
+import Link from "next/link";
 import {
-    BookOpen,
-    Bot,
-    Frame,
-    Map,
-    PieChart,
-    Settings2,
-    SquareTerminal,
-    FileText
+    Home,
+    ListChecks,
+    PlusCircle,
 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"; // Added
 
-import {NavMain} from '@/components/sidebar/nav-main'
-import {NavProjects} from '@/components/sidebar/nav-projects'
 import {NavUser} from '@/components/sidebar/nav-user'
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
-    SidebarRail,
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
+    SidebarRail,
 } from '@/components/ui/sidebar'
-import Link from "next/link";
 
-// This is sample data.
-const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
-    },
-    navMain: [
-        {
-            title: "Quiz Manager",
-            url: "#",
-            icon: SquareTerminal,
-            isActive: true,
-            items: [
-                {
-                    title: "Create Quiz",
-                    url: "#",
-                },
-                {
-                    title: "View Quizes",
-                    url: "#",
-                },
-                {
-                    title: "History",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Models",
-            url: "#",
-            icon: Bot,
-            items: [
-                {
-                    title: "Genesis",
-                    url: "#",
-                },
-                {
-                    title: "Explorer",
-                    url: "#",
-                },
-                {
-                    title: "Quantum",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Documentation",
-            url: "#",
-            icon: BookOpen,
-            items: [
-                {
-                    title: "Introduction",
-                    url: "#",
-                },
-                {
-                    title: "Get Started",
-                    url: "#",
-                },
-                {
-                    title: "Tutorials",
-                    url: "#",
-                },
-                {
-                    title: "Changelog",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: Settings2,
-            items: [
-                {
-                    title: "General",
-                    url: "#",
-                },
-                {
-                    title: "Team",
-                    url: "#",
-                },
-                {
-                    title: "Billing",
-                    url: "#",
-                },
-                {
-                    title: "Limits",
-                    url: "#",
-                },
-            ],
-        },
-    ],
-    projects: [
-        {
-            name: "Design Engineering",
-            url: "#",
-            icon: Frame,
-        },
-        {
-            name: "Sales & Marketing",
-            url: "#",
-            icon: PieChart,
-        },
-        {
-            name: "Travel",
-            url: "#",
-            icon: Map,
-        },
-    ],
-}
+// Removed baseUserData, will come from AuthContext via NavUser
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+    const pathname = usePathname();
+    const { user } = useAuth(); // Get user for conditional logic if needed, though NavUser handles most of it
+
+    const mainNavItems = [
+        {
+            title: "Home",
+            url: "/",
+            icon: Home,
+            isActive: pathname === '/',
+        },
+        {
+            title: "My Quizzes",
+            url: "/my-quizzes",
+            icon: ListChecks,
+            isActive: pathname === '/my-quizzes' || pathname.startsWith('/quiz/'),
+        },
+        {
+            title: "Create Quiz",
+            url: "/create-quiz",
+            icon: PlusCircle,
+            isActive: pathname === '/create-quiz',
+        },
+    ];
+
+    // Updated isActive logic for the profile/login section
+    // This is handled by NavUser's own link and its isActive prop
+    const isProfileLoginSectionActive = user 
+        ? (pathname === '/profile' || pathname.startsWith('/account-settings'))
+        : pathname === '/login';
+
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader>
+            <SidebarHeader className="mb-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             asChild
-                            className="data-[slot=sidebar-menu-button]:!p-1.5"
+                            className="!p-3 !h-auto hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent data-[active=true]:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                         >
-                            <Link href="/">
-                                <FileText className="!size-5"/>
-                                <span className="text-base font-semibold">Quizify</span>
+                            <Link href="/" className="flex items-center gap-3">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="!size-9 text-primary shrink-0">
+                                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                <span className="text-3xl font-bold text-primary">Quizify</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain}/>
-                <NavProjects projects={data.projects}/>
+                <SidebarMenu>
+                    {mainNavItems.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={item.title}
+                                isActive={item.isActive}
+                                size="lg" // Consistent button size
+                            >
+                                <Link href={item.url}>
+                                    {item.icon && <item.icon className="size-6 shrink-0" />}
+                                    <span className="font-medium">{item.title}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                    {/* NavUser now handles its own state based on auth */}
+                    <NavUser isActive={isProfileLoginSectionActive} />
+                </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter>
-                <NavUser user={data.user}/>
-            </SidebarFooter>
             <SidebarRail/>
         </Sidebar>
     )
