@@ -1,5 +1,7 @@
+
 "use client"
 
+import Link from "next/link";
 import {
   Folder,
   Forward,
@@ -38,15 +40,15 @@ export function NavProjects({
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Recent Quizes</SidebarGroupLabel>
+      <SidebarGroupLabel>Your Quizzes</SidebarGroupLabel> {/* Changed label */}
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
-              <a href={item.url}>
+            <SidebarMenuButton asChild tooltip={item.name}>
+              <Link href={item.url}>
                 <item.icon />
                 <span>{item.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -77,12 +79,16 @@ export function NavProjects({
             </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <MoreHorizontal className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {projects.length > 3 && ( /* Example: Show "More" if many quizzes */
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild className="text-sidebar-foreground/70">
+              <Link href="/my-quizzes">
+                  <MoreHorizontal className="text-sidebar-foreground/70" />
+                  <span>All Quizzes</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )

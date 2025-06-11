@@ -1,13 +1,9 @@
+
 "use client"
 
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react"
+import Link from "next/link";
+import { UserCircle, LogIn, Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context";
 
 import {
   Avatar,
@@ -15,100 +11,70 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar'
 
 export function NavUser({
-  user,
+  isActive,
 }: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
+  isActive?: boolean
 }) {
-  const { isMobile } = useSidebar()
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          className="justify-start"
+          disabled
+        >
+          <Loader2 className="size-7 shrink-0 animate-spin" />
+          <span className="font-medium truncate">Loading...</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          size="lg"
+          isActive={isActive} // isActive might be for /login page
+          tooltip="Login"
+          className="justify-start"
+        >
+          <Link href="/login">
+            <LogIn className="size-7 shrink-0" />
+            <span className="font-medium truncate">Login</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        size="lg"
+        isActive={isActive} // isActive for /profile or /account-settings
+        tooltip="Profile"
+        className="justify-start"
+      >
+        <Link href="/profile">
+          <Avatar className="size-7 shrink-0">
+            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || "User"} />}
+            <AvatarFallback>
+              {user.displayName ? user.displayName.substring(0,1).toUpperCase() : <UserCircle />}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium truncate">Profile</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }

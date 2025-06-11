@@ -1,156 +1,286 @@
+
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect, useTransition, useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { QuizifyButton } from "@/components/custom/Quizify-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, FileText, Loader2 } from "lucide-react"
+import { Plus, FileText, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import toast from "react-hot-toast"
+import { cn } from "@/lib/utils"
+import { createQuizAction } from "./actions"
+import type { QuizData } from "@/src/ai/flows/create-quiz-flow"
+import { useAuth } from "@/contexts/auth-context"
+import { db } from "@/src/lib/firebase" // Import db for client-side write
+import { doc, setDoc, serverTimestamp } from "firebase/firestore" // Import Firestore functions
+
+// Updated initial state to reflect changes in action's return type
+const initialState: { quiz?: QuizData; pdfStorageUrl?: string; error?: string; message?: string } = {};
 
 export default function CreateQuizPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [questionCount, setQuestionCount] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const router = useRouter()
+  const [questionCount, setQuestionCount] = useState("10")
+  const [progressValue, setProgressValue] = useState(0)
+  const [isSaving, setIsSaving] = useState(false); // For client-side saving indicator
+
+  const [isPendingAction, startTransition] = useTransition(); // Renamed for clarity
+  const [formState, formAction] = useActionState(createQuizAction, initialState);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file && file.type === "application/pdf") {
-      setSelectedFile(file)
+    if (file) {
+      if (file.type === "application/pdf") {
+        if (file.size <= 10 * 1024 * 1024) { // Max 10MB
+          setSelectedFile(file)
+          setProgressValue(0);
+        } else {
+          toast.error("File is too large. Maximum size is 10MB.")
+          setSelectedFile(null);
+          event.target.value = ""
+        }
+      } else {
+        toast.error("Please select a PDF file.")
+        setSelectedFile(null);
+        event.target.value = ""
+      }
     } else {
-      toast.error("Please select a PDF file.")
+      setSelectedFile(null);
     }
   }
 
-  const handleCreateQuiz = async () => {
+ useEffect(() => {
+    // This effect handles the result from the server action
+    if (formState?.message && !formState.error && formState.quiz && user) {
+      // AI part done, now save to Firestore from client
+      const saveData = async () => {
+        setIsSaving(true);
+        toast.loading("Saving quiz to database...", { id: "saving-toast" });
+
+        // Ensure all fields expected by QuizData are present or correctly handled
+        const quizDataFromAI = formState.quiz!;
+        
+        const quizToSave = {
+          id: quizDataFromAI.id,
+          title: quizDataFromAI.title,
+          description: quizDataFromAI.description, // Optional, from AI
+          questionCount: quizDataFromAI.questionCount,
+          questions: quizDataFromAI.questions,
+          userId: user.uid, // Add authenticated user's ID
+          createdAt: serverTimestamp(), // Use Firestore server timestamp
+          isPublic: true, // Default to public
+          // Conditionally add pdfStorageUrl
+          ...(formState.pdfStorageUrl && { pdfStorageUrl: formState.pdfStorageUrl }),
+        };
+
+        try {
+          const quizDocRef = doc(db, 'quizzes', quizDataFromAI.id);
+          await setDoc(quizDocRef, quizToSave);
+          toast.dismiss("saving-toast");
+          toast.success('Quiz created and saved successfully!');
+          router.push("/my-quizzes");
+        } catch (dbError) {
+          console.error("Firestore save error:", dbError);
+          toast.dismiss("saving-toast");
+          toast.error(`Failed to save quiz: ${dbError instanceof Error ? dbError.message : "Unknown database error"}`);
+        } finally {
+          setIsSaving(false);
+        }
+      };
+      saveData();
+    }
+    if (formState?.error) {
+      toast.error(formState.error); // Error from server action (AI generation part)
+    }
+  }, [formState, router, user]);
+
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) {
+      toast.error("You must be logged in to create a quiz.");
+      router.push('/login');
+      return;
+    }
     if (!selectedFile || !questionCount) {
       toast.error("Please upload a PDF and enter the number of questions.")
       return
     }
-
     const count = Number.parseInt(questionCount)
     if (count < 1 || count > 50) {
       toast.error("Please enter a number between 1 and 50.")
       return
     }
 
-    setIsLoading(true)
-    setProgress(0)
+    const formData = new FormData();
+    formData.append('pdfFile', selectedFile);
+    formData.append('questionCount', questionCount);
+    formData.append('userId', user.uid); 
 
-    // Simulate AI processing with progress updates
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval)
-          return 90
+    let progressInterval: NodeJS.Timeout | undefined;
+    if (isPendingAction) { // Use isPendingAction for AI generation progress
+        setProgressValue(0);
+        progressInterval = setInterval(() => {
+        setProgressValue((prev) => {
+            if (prev >= 90) {
+            clearInterval(progressInterval as NodeJS.Timeout);
+            return 90;
+            }
+            return prev + Math.random() * 10;
+        });
+        }, 300);
+    }
+
+    startTransition(() => {
+      formAction(formData); // Call server action
+    });
+    
+    return () => {
+        if (progressInterval) clearInterval(progressInterval);
+    };
+  };
+  
+  useEffect(() => {
+    // This effect manages progress bar based on server action's pending state
+    if (!isPendingAction && (formState?.quiz || formState?.error)) { // If action is done (success or error)
+        setProgressValue(100); 
+        // If successful, saving starts, progress can remain or show saving state
+        // If error, progress resets.
+        if (formState?.error || (!formState?.quiz && !isSaving)) {
+          setTimeout(() => setProgressValue(0), 1000); // Reset progress after error or if no saving happens
         }
-        return prev + Math.random() * 15
-      })
-    }, 200)
+    }
+  }, [isPendingAction, formState, isSaving]);
 
-    // Simulate processing time
-    setTimeout(() => {
-      clearInterval(progressInterval)
-      setProgress(100)
-
-      setTimeout(() => {
-        setIsLoading(false)
-        toast.success(`Quiz created successfully! Generated ${questionCount} questions.`)
-        router.push("/my-quizzes")
-      }, 500)
-    }, 3000)
+  if (authLoading || (!authLoading && !user)) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
 
+  const isProcessing = isPendingAction || isSaving;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Quiz</h1>
-          <p className="text-gray-600">Upload a PDF document and generate a custom quiz</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Create New Quiz</h1>
+          <p className="text-muted-foreground">Upload a PDF document and generate a custom quiz</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Quiz Configuration</CardTitle>
             <CardDescription>
-              Upload your PDF document and specify how many questions you'd like to generate
+              Upload your PDF document and specify how many questions you&apos;d like to generate.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* PDF Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="pdf-upload">Upload PDF Document</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <input id="pdf-upload" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
-                <label htmlFor="pdf-upload" className="cursor-pointer">
-                  {selectedFile ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <FileText className="h-8 w-8 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                        <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">Click to upload PDF or drag and drop</p>
-                      <p className="text-xs text-gray-400">PDF files only</p>
-                    </div>
+          <CardContent className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-3">
+                <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
+                <div
+                  className={cn(
+                    "rounded-lg p-6 text-center transition-all duration-300 ease-in-out",
+                    selectedFile
+                      ? "border-2 border-solid border-primary bg-primary/10"
+                      : "border-2 border-dashed border-input hover:border-primary hover:bg-accent/10"
                   )}
-                </label>
-              </div>
-            </div>
-
-            {/* Question Count */}
-            <div className="space-y-2">
-              <Label htmlFor="question-count">Number of Questions</Label>
-              <Input
-                id="question-count"
-                type="number"
-                placeholder="Enter number of questions (1-50)"
-                value={questionCount}
-                onChange={(e) => setQuestionCount(e.target.value)}
-                min="1"
-                max="50"
-              />
-            </div>
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-gray-600">Processing PDF and generating quiz...</span>
+                >
+                  <input id="pdf-upload" name="pdfFile" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" disabled={isProcessing} />
+                  <label htmlFor="pdf-upload" className={cn("cursor-pointer block w-full py-4", isProcessing ? "cursor-not-allowed opacity-70" : "")}>
+                    {selectedFile ? (
+                      <div className="flex flex-col items-center justify-center space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4">
+                        <FileText className="h-10 w-10 text-primary" />
+                        <div className="text-center sm:text-left">
+                          <p className="text-md font-semibold text-foreground">{selectedFile.name}</p>
+                          <p className="text-sm text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center">
+                        <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-md font-medium text-foreground/90">Click to upload or drag and drop</p>
+                        <p className="text-sm text-muted-foreground mt-1">PDF files only (max 10MB)</p>
+                      </div>
+                    )}
+                  </label>
                 </div>
-                <Progress value={progress} className="w-full" />
-                <p className="text-xs text-gray-500 text-center">
-                  This may take a few moments while our AI analyzes your document
-                </p>
               </div>
-            )}
 
-            {/* Create Button */}
-            <Button
-              onClick={handleCreateQuiz}
-              disabled={!selectedFile || !questionCount || isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Quiz...
-                </>
-              ) : (
-                "Create Quiz"
+              <div className="space-y-3">
+                <Label htmlFor="question-count" className="text-md font-medium">Number of Questions</Label>
+                <Input
+                  id="question-count"
+                  name="questionCount"
+                  type="number"
+                  placeholder="Enter number of questions (1-50)"
+                  value={questionCount}
+                  onChange={(e) => setQuestionCount(e.target.value)}
+                  min="1"
+                  max="50"
+                  className="py-3"
+                  disabled={isProcessing}
+                />
+              </div>
+
+              {isPendingAction && ( // AI generation progress
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-md text-muted-foreground">Generating quiz content... This may take a moment.</span>
+                  </div>
+                  <Progress value={progressValue} className="w-full h-2.5" />
+                </div>
               )}
-            </Button>
+              {isSaving && ( // Client-side saving progress
+                 <div className="space-y-4 pt-4">
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-md text-muted-foreground">Saving quiz to database...</span>
+                  </div>
+                   {/* Optionally, you can add another progress bar or keep the existing one */}
+                  <Progress value={progressValue < 100 ? 95 : 100} className="w-full h-2.5" />
+                </div>
+              )}
+
+
+              <QuizifyButton
+                type="submit"
+                variant="threed"
+                size="lg"
+                disabled={!selectedFile || !questionCount || isProcessing || !user}
+                className="w-full py-3"
+              >
+                {isPendingAction ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating Content...
+                  </>
+                ) : isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Saving Quiz...
+                  </>
+                ) : (
+                  "Create Quiz & Get Started!"
+                )}
+              </QuizifyButton>
+            </form>
           </CardContent>
         </Card>
       </div>
