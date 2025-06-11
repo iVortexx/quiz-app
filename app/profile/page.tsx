@@ -67,9 +67,14 @@ export default function ProfilePage() {
 
         <Card className="w-full shadow-xl">
           <CardHeader className="items-center text-center p-8">
-            <Avatar className="h-24 w-24 mb-4 border-2 border-primary p-1">
+            <Avatar className="h-24 w-24 mb-4 border-2 border-primary p-1 mx-auto">
               {user?.photoURL ? (
-                <AvatarImage src={user.photoURL} alt={user.displayName || "User"} data-ai-hint="user avatar" />
+                  <AvatarImage
+                      className="rounded-full"
+                      src={user.photoURL}
+                      alt={user.displayName || "User"}
+                      data-ai-hint="user avatar"
+                  />
               ) : (
                 <UserCircle className="h-full w-full text-muted-foreground" />
               )}
@@ -90,7 +95,7 @@ export default function ProfilePage() {
           <CardContent className="px-8 pt-6 pb-8">
             <div className="flex flex-col space-y-6">
               <Link href="/account-settings" passHref>
-                <QuizifyButton variant="threed" className="w-full">
+                <QuizifyButton variant="neon" className="w-full">
                   <Settings className="mr-2 h-5 w-5" />
                   Account Settings
                 </QuizifyButton>

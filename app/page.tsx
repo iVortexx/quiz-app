@@ -24,7 +24,7 @@ export default function HomePage() {
                 </QuizifyButton>
               </Link>
               <Link href="/my-quizzes">
-                <QuizifyButton variant="threed" size="lg">
+                <QuizifyButton variant="glass" size="lg">
                   <Play className="mr-2 h-5 w-5" />
                   My Quizzes
                 </QuizifyButton>
