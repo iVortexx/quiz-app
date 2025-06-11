@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useParams, useRouter } from 'next/navigation' 
+import { useParams } from 'next/navigation' 
 import { QuizifyButton } from "@/components/custom/Quizify-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +30,6 @@ interface StoredQuizResults {
 
 export default function QuizResultsPage() {
   const params = useParams<{ quizId: string; resultId: string; }>() 
-  const router = useRouter(); 
   const { user, loading: authLoading } = useAuth(); 
 
   const [results, setResults] = useState<StoredQuizResults | null>(null)

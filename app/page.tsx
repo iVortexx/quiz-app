@@ -1,9 +1,8 @@
-
 import Link from "next/link"
 import Image from "next/image"
 import { QuizifyButton } from "@/components/custom/Quizify-button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Plus, Play, BarChart3 } from "lucide-react" // Keep BarChart3 for now if used as fallback
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
+import { Plus, Play } from "lucide-react" // Keep BarChart3 for now if used as fallback
 
 export default function HomePage() {
   return (
