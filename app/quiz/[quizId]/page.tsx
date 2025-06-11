@@ -1,7 +1,7 @@
 
 "use client"
 
-import {useState, useEffect} from "react"
+import {useState, useEffect, useCallback} from "react"
 import {useRouter, useParams} from "next/navigation"
 import Link from "next/link";
 import {QuizifyButton} from "@/components/custom/Quizify-button"
@@ -70,31 +70,7 @@ export default function QuizPage() {
         }
     }, [params.quizId, params]);  // Added params to dependency array
 
-    useEffect(() => {
-        if (!quiz || isLoadingQuiz || isSubmitting || authLoading || !user) return; 
-
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    if (!isSubmitting) handleSubmitQuiz(); 
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [quiz, isLoadingQuiz, isSubmitting, authLoading, user]); // handleSubmitQuiz was missing
-
-    const handleAnswerChange = (questionId: string, answerIndex: number) => {
-        setAnswers((prev) => ({
-            ...prev,
-            [questionId]: answerIndex,
-        }))
-    }
-
-    const handleSubmitQuiz = async () => {
+    const handleSubmitQuiz = useCallback(async () => {
         if (!quiz || isSubmitting || !user) {
             console.warn("handleSubmitQuiz: Aborted. Quiz not loaded, already submitting, or user not logged in.");
             return;
@@ -138,8 +114,32 @@ export default function QuizPage() {
             console.error("QuizPage: Error submitting quiz results:", error);
             toast.dismiss("submit-toast");
             toast.error("Failed to submit your results. Please try again.");
-            setIsSubmitting(false); 
+            setIsSubmitting(false);
         }
+    }, [quiz, isSubmitting, user, answers, router]);
+
+    useEffect(() => {
+        if (!quiz || isLoadingQuiz || isSubmitting || authLoading || !user) return;
+
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    if (!isSubmitting) handleSubmitQuiz();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [quiz, isLoadingQuiz, isSubmitting, authLoading, user, handleSubmitQuiz]);
+
+    const handleAnswerChange = (questionId: string, answerIndex: number) => {
+        setAnswers((prev) => ({
+            ...prev,
+            [questionId]: answerIndex,
+        }))
     }
 
     const formatTime = (seconds: number) => {

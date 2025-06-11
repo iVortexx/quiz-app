@@ -18,18 +18,19 @@ async function fileToDataUri(file: File): Promise<string> {
     const dataUri = `data:${file.type};base64,${base64String}`;
     console.log(`fileToDataUri: Data URI created, length ${dataUri.length}. Preview (first 100 chars): ${dataUri.substring(0,100)}`);
     return dataUri;
-  } catch (conversionError: any) {
+  } catch (conversionError: unknown) {
     console.error("fileToDataUri: CRITICAL ERROR during file to Data URI conversion:", conversionError);
-    console.error("Conversion Error Name:", conversionError?.name);
-    console.error("Conversion Error Message:", conversionError?.message);
-    console.error("Conversion Error Stack:", conversionError?.stack);
+    const error = conversionError instanceof Error ? conversionError : new Error(String(conversionError));
+    console.error("Conversion Error Name:", error.name);
+    console.error("Conversion Error Message:", error.message);
+    console.error("Conversion Error Stack:", error.stack);
     // Rethrow a new error with a clear message to be caught by the action's main try/catch
-    throw new Error(`Failed to convert file to Data URI: ${conversionError?.message || 'Unknown conversion error.'} This often indicates an out-of-memory issue with large files.`);
+    throw new Error(`Failed to convert file to Data URI: ${error.message || 'Unknown conversion error.'} This often indicates an out-of-memory issue with large files.`);
   }
 }
 
 export async function createQuizAction(
-  prevState: any,
+  prevState: unknown,
   formData: FormData,
 ): Promise<{ quiz?: QuizData; pdfStorageUrl?: string; error?: string; message?: string }> {
   console.log("createQuizAction: Server action started.");
@@ -93,8 +94,9 @@ export async function createQuizAction(
       pdfStorageUrlFromUpload = await uploadPdf(file);
       const uploadDuration = Date.now() - uploadStartTime;
       console.log(`createQuizAction: PDF uploaded successfully to Firebase Storage in ${uploadDuration}ms. URL:`, pdfStorageUrlFromUpload);
-    } catch (uploadError: any) {
-      console.warn('createQuizAction: PDF upload to Firebase Storage failed (non-fatal for AI). Name:', uploadError?.name, 'Message:', uploadError?.message, 'Stack:', uploadError?.stack?.substring(0, 500));
+    } catch (uploadError: unknown) {
+      const error = uploadError instanceof Error ? uploadError : new Error(String(uploadError));
+      console.warn('createQuizAction: PDF upload to Firebase Storage failed (non-fatal for AI). Name:', error.name, 'Message:', error.message, 'Stack:', error.stack?.substring(0, 500));
     }
     console.log("createQuizAction: PDF upload to Firebase Storage process completed.");
 
@@ -125,25 +127,27 @@ export async function createQuizAction(
         message: 'Quiz content generated. Ready for client-side saving.'
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('------------------------------------------------------------------');
     console.error('createQuizAction: CRITICAL UNHANDLED ERROR in main try...catch block:');
     console.error('Error Type:', Object.prototype.toString.call(error));
-    console.error('Error Name:', error?.name || 'N/A');
-    console.error('Error Message:', error?.message || 'No message');
-    console.error('Error Stack:', error?.stack ? error.stack.substring(0, 1000) : 'No stack'); // Log first 1000 chars of stack
 
-    let clientErrorMessage = `An unexpected server error occurred. Please try again. If the issue persists with large files, it might be a memory or processing limit. (Error: ${error?.name || 'UnknownError'})`;
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Error Name:', err.name || 'N/A');
+    console.error('Error Message:', err.message || 'No message');
+    console.error('Error Stack:', err.stack ? err.stack.substring(0, 1000) : 'No stack'); // Log first 1000 chars of stack
+
+    let clientErrorMessage = `An unexpected server error occurred. Please try again. If the issue persists with large files, it might be a memory or processing limit. (Error: ${err.name || 'UnknownError'})`;
 
     if (error instanceof z.ZodError) {
       clientErrorMessage = `AI response validation error. Please check server logs for details. (ZodError)`;
       console.error('ZodError Details:', JSON.stringify(error.errors, null, 2));
-    } else if (error?.message?.includes('Failed to convert file to Data URI')) {
-      clientErrorMessage = error.message; // Use the more specific message from fileToDataUri
-    } else if (error?.message?.includes('timeout') || error?.message?.includes('deadline')) {
+    } else if (err.message?.includes('Failed to convert file to Data URI')) {
+      clientErrorMessage = err.message; // Use the more specific message from fileToDataUri
+    } else if (err.message?.includes('timeout') || err.message?.includes('deadline')) {
       clientErrorMessage = `AI processing timed out, possibly due to a large/complex document. (TimeoutError)`;
-    } else if (error?.message?.includes('AIService')) {
-      clientErrorMessage = `An error occurred with the AI service. (AIServiceError: ${error?.message})`;
+    } else if (err.message?.includes('AIService')) {
+      clientErrorMessage = `An error occurred with the AI service. (AIServiceError: ${err.message})`;
     }
     
     console.error('Client-facing error message to be returned:', clientErrorMessage);

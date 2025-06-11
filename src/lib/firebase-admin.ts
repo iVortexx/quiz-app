@@ -38,10 +38,11 @@ if (admin.apps.length > 0) {
       } else {
         console.error("[Firebase Admin Init] CRITICAL: admin.initializeApp was called with service account, but admin.apps is still empty. This is highly unexpected.");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Firebase Admin Init] CRITICAL ERROR: Firebase Admin SDK service account JSON parsing OR initialization with cert failed.');
-      console.error('[Firebase Admin Init] Error Name:', e?.name);
-      console.error('[Firebase Admin Init] Error Message:', e?.message);
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error('[Firebase Admin Init] Error Name:', error.name);
+      console.error('[Firebase Admin Init] Error Message:', error.message);
       console.error('[Firebase Admin Init] Ensure FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON is set correctly in your .env.local file, is valid JSON, and on a single line with \\n for newlines in the private key.');
       console.error('[Firebase Admin Init] Raw serviceAccountString (first 70 chars to check for "undefined" or emptiness):', String(serviceAccountString).substring(0, 70));
       if (String(serviceAccountString).includes("{") && String(serviceAccountString).includes("}")) {
@@ -65,10 +66,11 @@ if (admin.apps.length > 0) {
         } else {
           console.error("[Firebase Admin Init] CRITICAL: admin.initializeApp was called for ADC, but admin.apps is still empty. This is unexpected.");
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('[Firebase Admin Init] CRITICAL ERROR: Firebase Admin SDK initialization with ADC also failed.');
-        console.error('[Firebase Admin Init] Error Name:', e?.name);
-        console.error('[Firebase Admin Init] Error Message:', e?.message);
+        const error = e instanceof Error ? e : new Error(String(e));
+        console.error('[Firebase Admin Init] Error Name:', error.name);
+        console.error('[Firebase Admin Init] Error Message:', error.message);
         console.error('[Firebase Admin Init] For local development, ensure FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON is correctly set in .env.local and your server is restarted.');
         console.error('[Firebase Admin Init] For cloud environments, ensure ADC are correctly configured.');
     }

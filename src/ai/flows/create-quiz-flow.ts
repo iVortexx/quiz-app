@@ -117,7 +117,7 @@ const flow = ai.defineFlow(
       let rawOutputString = "[Could not serialize AI output for logging]";
       try {
         rawOutputString = JSON.stringify(output, null, 2);
-      } catch (e) {
+      } catch {
         console.warn("createQuizFlow: Failed to serialize AI output for detailed logging. Output might be too large or circular.");
       }
       console.log("createQuizFlow: Raw output received from AI (first 1000 chars):", rawOutputString.substring(0, 1000));
@@ -153,21 +153,22 @@ const flow = ai.defineFlow(
       }
 
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('-----------------------------------------------------');
       console.error('createQuizFlow: ERROR during quizGenerationPrompt call or initial processing:');
       console.error('Error Type:', Object.prototype.toString.call(error));
-      console.error('Error Name:', error?.name);
-      console.error('Error Message:', error?.message);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Error Name:', err.name);
+      console.error('Error Message:', err.message);
       if (error instanceof z.ZodError) {
         console.error('Error Details (ZodError from rethrow or AIPromptOutputSchemaInternal parse):', JSON.stringify(error.errors, null, 2));
-      } else if (error.details) {
-        console.error('Error Details (from error.details):', JSON.stringify(error.details, null, 2));
+      } else if ((error as { details?: unknown })?.details) {
+        console.error('Error Details (from error.details):', JSON.stringify((error as { details: unknown }).details, null, 2));
       }
-      if (error.cause) {
-        console.error('Error Cause (from error.cause):', JSON.stringify(error.cause, null, 2));
+      if ((error as { cause?: unknown })?.cause) {
+        console.error('Error Cause (from error.cause):', JSON.stringify((error as { cause: unknown }).cause, null, 2));
       }
-      console.error('Error Stack:', error?.stack);
+      console.error('Error Stack:', err.stack);
       console.error('-----------------------------------------------------');
       throw error; // Re-throw the error to be caught by the calling action
     }

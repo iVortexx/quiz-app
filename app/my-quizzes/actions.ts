@@ -2,9 +2,7 @@
 'use server';
 
 import { adminDb, verifyIdToken } from "@/src/lib/firebase-admin"; // Use Admin SDK
-// Keep client `db` for potential read operations if needed, or remove if adminDb covers all
-import { collection, query, where, getDocs, writeBatch, doc, getDoc as getClientDoc } from "firebase/firestore"; 
-import { db as clientDb } from "@/src/lib/firebase"; // Client SDK for initial fetch if needed
+// Removed unused client SDK imports as we're using Admin SDK
 
 import { revalidatePath } from "next/cache";
 
@@ -99,12 +97,13 @@ export async function deleteQuizAction(
     console.log(`[SERVER ACTION deleteQuizAction] Quiz '${quizId}' and its associated results deletion process completed using Admin SDK for user '${currentUserId}'.`);
     return { success: true, message: "Quiz and associated results deleted successfully." };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[SERVER ACTION deleteQuizAction] Error during Admin SDK operation for quiz '${quizId}':`, error);
     
     let errorMessage = "An unexpected error occurred while deleting the quiz using Admin SDK.";
-    let firebaseErrorCode: string | null = error?.code || null; // Admin SDK errors might have a 'code' property directly
-    let errorDetails = error?.message || String(error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    const firebaseErrorCode: string | null = (error as { code?: string })?.code || null; // Admin SDK errors might have a 'code' property directly
+    const errorDetails = err.message || String(error);
 
     // No need for the extensive PERMISSION_DENIED explanation related to client SDK in server actions,
     // as Admin SDK operates differently. If Admin SDK fails, it's usually a different kind of issue

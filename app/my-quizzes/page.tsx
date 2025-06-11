@@ -21,7 +21,7 @@ import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/
 import { deleteQuizAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
-const formatDate = (dateInput: any | undefined) => {
+const formatDate = (dateInput: unknown) => {
   if (!dateInput) return "N/A";
   try {
     if (dateInput instanceof Timestamp) {
@@ -32,7 +32,7 @@ const formatDate = (dateInput: any | undefined) => {
       });
     }
     // Attempt to parse if it's a string or number, assuming it's a valid date representation
-    const date = new Date(dateInput);
+    const date = new Date(dateInput as string | number | Date);
     if (isNaN(date.getTime())) { // Check if date is valid
         // console.warn("Invalid date input to formatDate:", dateInput);
         return "Invalid Date";
@@ -42,7 +42,7 @@ const formatDate = (dateInput: any | undefined) => {
       month: "short",
       day: "numeric",
     });
-  } catch (e) {
+  } catch {
     // console.error("Error formatting date:", e, "Input:", dateInput);
     return "Invalid Date";
   }
@@ -158,10 +158,10 @@ export default function MyQuizzesPage() {
         toast.error(result.error || "Failed to delete quiz.");
         console.error(`handleDeleteQuiz: Error from action - ${result.error}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toastId);
       let clientErrorMessage = "An unexpected error occurred while deleting the quiz.";
-      if (error.code === 'auth/requires-recent-login') {
+      if ((error as { code?: string })?.code === 'auth/requires-recent-login') {
         clientErrorMessage = "This operation requires a recent sign-in. Please sign out and sign back in to continue.";
       } else if (error instanceof Error) {
         clientErrorMessage = error.message;

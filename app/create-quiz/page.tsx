@@ -72,14 +72,14 @@ export default function CreateQuizPage() {
         // Ensure all fields expected by QuizData are present or correctly handled
         const quizDataFromAI = formState.quiz!;
         
-        const quizToSave: QuizData = {
+        const quizToSave = {
           id: quizDataFromAI.id,
           title: quizDataFromAI.title,
           description: quizDataFromAI.description, // Optional, from AI
           questionCount: quizDataFromAI.questionCount,
           questions: quizDataFromAI.questions,
           userId: user.uid, // Add authenticated user's ID
-          createdAt: serverTimestamp() as any, // Use Firestore server timestamp
+          createdAt: serverTimestamp(), // Use Firestore server timestamp
           isPublic: true, // Default to public
           // Conditionally add pdfStorageUrl
           ...(formState.pdfStorageUrl && { pdfStorageUrl: formState.pdfStorageUrl }),
