@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for creating quizzes from PDF documents.
@@ -67,20 +66,55 @@ const quizGenerationPrompt = ai.definePrompt({
   prompt: `You are an expert quiz creator specializing in generating high-quality educational quizzes from PDF documents. Your task is to create a quiz based SOLELY on the content of the provided PDF document: {{media url=pdfDataUri}}.
 
 Key Instructions:
-1.  **Document Adherence & Originality:** All questions, answer options, and the correct answer MUST be derived directly from the information present in the PDF document. Do NOT introduce any external knowledge, topics, or information not explicitly covered in the document. Ensure questions are not superficial and test understanding of the material.
-2.  **Language Consistency:** Generate the quiz title, all questions, and all answer options in the primary language used within the provided PDF document.
-3.  **Question Count:** Generate exactly {{{questionCount}}} multiple-choice questions. If the document is too short to generate this many high-quality, unique questions, generate as many as possible while maintaining quality and adhering to all other instructions. Do not repeat questions or create trivial variations.
-4.  **Avoid Duplicates & Ensure Variety:** Each question must be unique. Do not repeat questions or ask slightly rephrased versions of the same core concept. Aim for questions that cover different aspects or sections of the document, if possible, given the document's content and length.
-5.  **Question & Answer Format:** For each question:
-    a.  Formulate a clear, unambiguous, and concise question.
-    b.  Provide 4 distinct answer options. Ensure only one option is correct based on the PDF. Incorrect options should be plausible but clearly wrong according to the document.
-    c.  Define the correct answer by providing its 0-based index in the \`correctAnswerIndex\` field.
-6.  **Quiz Title:** Generate a concise and relevant title for the quiz. If a file name is provided ({{{fileName}}}), you can use it as a hint for the title, but prioritize a title that reflects the document's content.
-7.  **Output Format:** Return your response STRICTLY as a JSON object matching the following structure. Do NOT include 'id' fields for the questions; these will be added programmatically later. Do not include any explanations, apologies, or text outside of this JSON object. If you cannot fulfill the request due to document limitations (e.g. too short, unreadable content), return an empty questions array and a title indicating the issue, e.g., "Could not generate quiz from document".
+1. **Content Focus & Quality:**
+   - Focus on the main themes, key events, and important concepts from the document
+   - Prioritize questions about significant plot points, character development, and major themes
+   - Avoid questions about trivial details like specific dates or minor characters unless they are crucial to the story
+   - For long documents (100+ pages), focus on the most important and memorable content
+
+2. **Document Adherence & Originality:**
+   - All questions MUST be derived directly from the information present in the PDF
+   - Do NOT introduce any external knowledge or information not in the document
+   - Ensure questions test understanding of the material, not just memorization
+   - For long documents, create questions that span different sections to test overall comprehension
+
+3. **Language Consistency:**
+   - Generate the quiz title, all questions, and all answer options in the primary language used within the PDF
+   - Maintain consistent terminology and naming conventions from the document
+
+4. **Question Count & Distribution:**
+   - Generate exactly {{{questionCount}}} multiple-choice questions
+   - For long documents, distribute questions across different sections/chapters
+   - If the document is too short to generate this many quality questions, generate as many as possible while maintaining quality
+
+5. **Question Quality:**
+   - Each question must be unique and meaningful
+   - Avoid questions about:
+     * Release dates or publication details unless central to the story
+     * Minor characters or events unless they are crucial to the plot
+     * Trivial details that don't contribute to understanding the main content
+   - Focus on questions that test comprehension of:
+     * Main plot points and story arcs
+     * Character development and relationships
+     * Key themes and messages
+     * Important decisions and their consequences
+
+6. **Answer Options:**
+   - Provide 4 distinct answer options for each question
+   - Ensure only one option is correct based on the PDF
+   - Make incorrect options plausible but clearly wrong according to the document
+   - Avoid obviously wrong or unrelated options
+
+7. **Quiz Title:**
+   - Generate a concise and relevant title that reflects the main theme or content
+   - If a file name is provided ({{{fileName}}}), use it as a hint but prioritize content-based titles
+
+8. **Output Format:**
+Return your response STRICTLY as a JSON object matching the following structure. Do NOT include 'id' fields for the questions; these will be added programmatically later. Do not include any explanations, apologies, or text outside of this JSON object.
 
 JSON Structure:
 {
-  "title": "Quiz Title Reflecting Document Content",
+  "title": "Quiz Title Reflecting Main Theme",
   "questions": [
     {
       "questionText": "Text of the question in the document's language...",

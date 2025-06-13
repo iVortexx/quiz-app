@@ -215,3 +215,9 @@
     transition: opacity 0.2s ease-in 0.1s, max-height 0.2s ease-in 0.1s, margin-top 0.2s ease-in 0.1s !important;
   }
 }
+
+@layer utilities {
+  .glow-text {
+    text-shadow: 0 0 6px rgba(168, 85, 247, 0.7), 0 0 12px rgba(139, 92, 246, 0.6);
+  }
+}
