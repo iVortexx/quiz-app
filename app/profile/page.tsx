@@ -1,7 +1,5 @@
-
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { auth } from "@/src/lib/firebase"
@@ -9,7 +7,7 @@ import { signOut } from "firebase/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { QuizifyButton } from "@/components/custom/Quizify-button"
-import { UserCircle, LogOut, Settings, Loader2 } from "lucide-react"
+import { UserCircle, LogOut, /* Settings, */ Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { useState, useEffect } from "react";
 
@@ -94,12 +92,12 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="px-8 pt-6 pb-8">
             <div className="flex flex-col space-y-6">
-              <Link href="/account-settings" passHref>
+{/*               <Link href="/account-settings" passHref>
                 <QuizifyButton variant="neon" className="w-full">
                   <Settings className="mr-2 h-5 w-5" />
                   Account Settings
                 </QuizifyButton>
-              </Link>
+              </Link> */}
               <QuizifyButton
                 variant="threed"
                 className="w-full bg-red-600 hover:bg-red-700 border-b-red-800 hover:border-b-red-900"

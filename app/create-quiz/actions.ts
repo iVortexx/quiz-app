@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'genkit';
@@ -9,13 +8,41 @@ import { uploadPdf } from '@/src/lib/firebase';
 async function fileToDataUri(file: File): Promise<string> {
   console.log(`fileToDataUri: Starting conversion for file ${file.name}, size ${file.size}, type ${file.type}`);
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    console.log(`fileToDataUri: ArrayBuffer created, length ${arrayBuffer.byteLength}`);
-    const buffer = Buffer.from(arrayBuffer);
-    console.log(`fileToDataUri: Buffer created, length ${buffer.length}`);
-    const base64String = buffer.toString('base64');
-    console.log(`fileToDataUri: Base64 string created, length ${base64String.length}`);
+    // Check if file is corrupted or empty
+    if (file.size === 0) {
+      throw new Error('File appears to be empty or corrupted');
+    }
+
+    // Read file in chunks to avoid memory issues
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    const chunks: Uint8Array[] = [];
+    let offset = 0;
+
+    while (offset < file.size) {
+      const chunk = file.slice(offset, offset + chunkSize);
+      const arrayBuffer = await chunk.arrayBuffer();
+      chunks.push(new Uint8Array(arrayBuffer));
+      offset += chunkSize;
+    }
+
+    // Combine chunks
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const combinedBuffer = new Uint8Array(totalLength);
+    let position = 0;
+    
+    for (const chunk of chunks) {
+      combinedBuffer.set(chunk, position);
+      position += chunk.length;
+    }
+
+    const base64String = Buffer.from(combinedBuffer).toString('base64');
     const dataUri = `data:${file.type};base64,${base64String}`;
+    
+    // Validate the data URI
+    if (!dataUri.startsWith('data:application/pdf;base64,')) {
+      throw new Error('Invalid PDF data generated');
+    }
+
     console.log(`fileToDataUri: Data URI created, length ${dataUri.length}. Preview (first 100 chars): ${dataUri.substring(0,100)}`);
     return dataUri;
   } catch (conversionError: unknown) {
@@ -24,8 +51,7 @@ async function fileToDataUri(file: File): Promise<string> {
     console.error("Conversion Error Name:", error.name);
     console.error("Conversion Error Message:", error.message);
     console.error("Conversion Error Stack:", error.stack);
-    // Rethrow a new error with a clear message to be caught by the action's main try/catch
-    throw new Error(`Failed to convert file to Data URI: ${error.message || 'Unknown conversion error.'} This often indicates an out-of-memory issue with large files.`);
+    throw new Error(`Failed to process PDF: ${error.message || 'Unknown conversion error.'} Please ensure your PDF is not corrupted and try again.`);
   }
 }
 
@@ -52,9 +78,9 @@ export async function createQuizAction(
       console.error("createQuizAction: Error - Invalid file type. Only PDF is allowed. Type:", file.type);
       return { error: 'Invalid file type. Only PDF is allowed.' };
     }
-    if (file.size > 10 * 1024 * 1024) { // Max 10MB
-      console.error("createQuizAction: Error - File is too large. Maximum size is 10MB. File size:", file.size);
-      return { error: "File is too large. Maximum size is 10MB." };
+    if (file.size > 50 * 1024 * 1024) { // Increased to 50MB
+      console.error("createQuizAction: Error - File is too large. Maximum size is 50MB. File size:", file.size);
+      return { error: "File is too large. Maximum size is 50MB. Please try with a smaller file or split your PDF." };
     }
     if (!questionCountStr) {
       console.error("createQuizAction: Error - Number of questions not specified.");
