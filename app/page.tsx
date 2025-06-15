@@ -10,14 +10,15 @@ export default function HomePage() {
       <div className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-16">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              <span className="text-violet-600">Q</span>UIZIFY -
+            <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2">
+              <span>
+                <span className="text-violet-600">Q</span>UIZIFY
+              </span>
+              <span className="hidden sm:block"> - </span>
               <span className="text-white bg-gradient-to-l from-violet-500 to-purple-500 p-1 pl-6 backdrop-blur-lg rounded-lg border-violet-500 border-1 shadow-violet-500 shadow-xl antialiased glow-text ml-2">
                 AI-Powered ✨
               </span>
-              <span className="ml-2">
-              Quiz Generator
-              </span>
+              <span className="text-gray-900">Quiz Generator</span>
             </h1>
 
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
