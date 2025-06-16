@@ -4,7 +4,7 @@
 import type React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/src/lib/firebase';
+import { auth } from '@/lib/firebase';
 // Loader2 is no longer used for a global spinner in this file.
 // Pages or components that need a loader should import it directly or use Skeleton components.
 

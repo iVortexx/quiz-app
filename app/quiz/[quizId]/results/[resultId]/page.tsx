@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -8,9 +7,9 @@ import { QuizifyButton } from "@/components/custom/Quizify-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, RotateCcw, Home, Trophy, Target, Loader2 } from "lucide-react"
-import type { QuizQuestion } from "@/src/ai/flows/create-quiz-flow"
+import type { QuizQuestion } from "@/ai/flows/create-quiz-flow"
 import { cn } from "@/lib/utils";
-import { db } from "@/src/lib/firebase"
+import { db } from "@/lib/firebase"
 import { doc, getDoc, Timestamp } from "firebase/firestore"
 import toast from "react-hot-toast"
 import { useAuth } from "@/contexts/auth-context"; 

@@ -2,18 +2,21 @@
 
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { auth } from "@/src/lib/firebase"
+import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { QuizifyButton } from "@/components/custom/Quizify-button"
-import { UserCircle, LogOut, /* Settings, */ Loader2 } from "lucide-react"
+import { UserCircle, LogOut, Loader2, Sun, Moon, Laptop } from "lucide-react"
 import toast from "react-hot-toast"
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [creationDate, setCreationDate] = useState<string | null>(null);
 
@@ -58,56 +61,83 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background py-12 flex flex-col items-center">
-      <div className="max-w-md w-full px-4">
-        <div className="mb-10 text-center">
+      <div className="max-w-md w-full px-4 space-y-8">
+        <div className="text-center">
           <h1 className="text-4xl font-bold text-foreground mb-2">My Profile</h1>
         </div>
 
         <Card className="w-full shadow-xl">
           <CardHeader className="items-center text-center p-8">
-            <Avatar className="h-24 w-24 mb-4 border-2 border-primary p-1 mx-auto">
-              {user?.photoURL ? (
+            <Avatar className="h-32 w-32 border-4 border-primary/80 p-1 shadow-lg bg-background mx-auto mb-4">
+              {user?.photoURL && (
                   <AvatarImage
                       className="rounded-full"
                       src={user.photoURL}
                       alt={user.displayName || "User"}
                       data-ai-hint="user avatar"
                   />
-              ) : (
-                <UserCircle className="h-full w-full text-muted-foreground" />
               )}
-              <AvatarFallback className="text-3xl">
-                {user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : <UserCircle />}
+              <AvatarFallback className="text-5xl font-semibold text-primary bg-muted/30">
+                {user?.displayName ? (
+                  user.displayName.substring(0, 2).toUpperCase()
+                ) : (
+                  <UserCircle className="h-20 w-20 text-primary/70" />
+                )}
               </AvatarFallback>
             </Avatar>
-            <CardTitle className="text-3xl font-bold mb-1">{user?.displayName || "User"}</CardTitle>
-            <CardDescription className="text-base text-muted-foreground">
-              {user?.email || "No email provided"}
-            </CardDescription>
-            {creationDate && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Joined on {creationDate}
-              </p>
-            )}
-          </CardHeader>
-          <CardContent className="px-8 pt-6 pb-8">
-            <div className="flex flex-col space-y-6">
-{/*               <Link href="/account-settings" passHref>
-                <QuizifyButton variant="neon" className="w-full">
-                  <Settings className="mr-2 h-5 w-5" />
-                  Account Settings
-                </QuizifyButton>
-              </Link> */}
-              <QuizifyButton
-                variant="threed"
-                className="w-full bg-red-600 hover:bg-red-700 border-b-red-800 hover:border-b-red-900"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
-                {isLoggingOut ? "Logging out..." : "Logout"}
-              </QuizifyButton>
+            
+            <div>
+              <CardTitle className="text-3xl font-bold">{user?.displayName || "Quiz Taker"}</CardTitle>
+              <CardDescription className="text-md text-muted-foreground mt-1">
+                {user?.email || "Email not available"}
+              </CardDescription>
+              {creationDate && (
+                <p className="text-xs text-muted-foreground/80 mt-2">
+                  Joined on {creationDate}
+                </p>
+              )}
             </div>
+          </CardHeader>
+          <CardContent className="px-8 pt-6 pb-8 space-y-6">
+            <div className="space-y-3">
+              
+              <div className="flex space-x-2">
+                <QuizifyButton
+                  variant="outlined"
+                  size="sm"
+                  onClick={() => setTheme("light")}
+                  className={cn("flex-1", theme === "light" && "ring-2 ring-primary border-primary")}
+                >
+                  <Sun className="mr-2 h-4 w-4" /> Light
+                </QuizifyButton>
+                <QuizifyButton
+                  variant="outlined"
+                  size="sm"
+                  onClick={() => setTheme("dark")}
+                  className={cn("flex-1", theme === "dark" && "ring-2 ring-primary border-primary")}
+                >
+                  <Moon className="mr-2 h-4 w-4" /> Dark
+                </QuizifyButton>
+                <QuizifyButton
+                  variant="outlined"
+                  size="sm"
+                  onClick={() => setTheme("system")}
+                  className={cn("flex-1", theme === "system" && "ring-2 ring-primary border-primary")}
+                >
+                  <Laptop className="mr-2 h-4 w-4" /> System
+                </QuizifyButton>
+              </div>
+            </div>
+
+            <QuizifyButton
+              variant="threed"
+              className="w-full bg-red-600 hover:bg-red-700 border-b-red-800 hover:border-b-red-900 text-white"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </QuizifyButton>
           </CardContent>
         </Card>
       </div>

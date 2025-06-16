@@ -1,8 +1,9 @@
+
 'use server';
 
 import { z } from 'genkit';
-import { createQuiz, type CreateQuizInput, type QuizData } from '@/src/ai/flows/create-quiz-flow';
-import { uploadPdf } from '@/src/lib/firebase';
+import { createQuiz, type CreateQuizInput, type QuizData } from '@/ai/flows/create-quiz-flow';
+import { uploadPdf } from '@/lib/firebase';
 
 // Helper function to convert File to Data URI
 async function fileToDataUri(file: File): Promise<string> {
@@ -163,17 +164,21 @@ export async function createQuizAction(
     console.error('Error Message:', err.message || 'No message');
     console.error('Error Stack:', err.stack ? err.stack.substring(0, 1000) : 'No stack'); // Log first 1000 chars of stack
 
-    let clientErrorMessage = `An unexpected server error occurred. Please try again. If the issue persists with large files, it might be a memory or processing limit. (Error: ${err.name || 'UnknownError'})`;
+    let clientErrorMessage = `An unexpected server error occurred. Please try again. (Error: ${err.name || 'UnknownError'})`;
 
     if (error instanceof z.ZodError) {
       clientErrorMessage = `AI response validation error. Please check server logs for details. (ZodError)`;
       console.error('ZodError Details:', JSON.stringify(error.errors, null, 2));
-    } else if (err.message?.includes('Failed to convert file to Data URI')) {
-      clientErrorMessage = err.message; // Use the more specific message from fileToDataUri
+    } else if (err.message?.includes('Failed to process PDF') || err.message?.includes('Invalid PDF data generated') ) {
+      clientErrorMessage = err.message; 
     } else if (err.message?.includes('timeout') || err.message?.includes('deadline')) {
       clientErrorMessage = `AI processing timed out, possibly due to a large/complex document. (TimeoutError)`;
+    } else if (err.name === 'GenkitError') {
+      clientErrorMessage = `AI Generation Error: The AI failed to process your request. Please check the server logs for 'createQuizFlow' error details. (GenkitError: ${err.message || 'Core process failed'})`;
     } else if (err.message?.includes('AIService')) {
       clientErrorMessage = `An error occurred with the AI service. (AIServiceError: ${err.message})`;
+    } else if (file && file.size > 20 * 1024 * 1024 && clientErrorMessage.includes('unexpected server error')) { // Heuristic for large files
+        clientErrorMessage = `An unexpected server error occurred. This might be due to the large file size (${(file.size / (1024*1024)).toFixed(1)}MB). Please try a smaller file or check server logs. (Error: ${err.name || 'UnknownError'})`;
     }
     
     console.error('Client-facing error message to be returned:', clientErrorMessage);

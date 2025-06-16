@@ -8,8 +8,9 @@ import {
     Home,
     ListChecks,
     PlusCircle,
+    BarChartHorizontalBig, // Changed icon
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"; // Added
+import { useAuth } from "@/contexts/auth-context";
 
 import {NavUser} from '@/components/sidebar/nav-user'
 import {
@@ -22,11 +23,10 @@ import {
     SidebarRail,
 } from '@/components/ui/sidebar'
 
-// Removed baseUserData, will come from AuthContext via NavUser
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
-    const { user } = useAuth(); // Get user for conditional logic if needed, though NavUser handles most of it
+    const { user } = useAuth(); 
 
     const mainNavItems = [
         {
@@ -47,10 +47,14 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
             icon: PlusCircle,
             isActive: pathname === '/create-quiz',
         },
+        {
+            title: "History",
+            url: "/history",
+            icon: BarChartHorizontalBig,
+            isActive: pathname === '/history',
+        }
     ];
 
-    // Updated isActive logic for the profile/login section
-    // This is handled by NavUser's own link and its isActive prop
     const isProfileLoginSectionActive = user 
         ? (pathname === '/profile' || pathname.startsWith('/account-settings'))
         : pathname === '/login';
@@ -84,7 +88,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                                 asChild
                                 tooltip={item.title}
                                 isActive={item.isActive}
-                                size="lg" // Consistent button size
+                                size="lg"
                             >
                                 <Link href={item.url}>
                                     {item.icon && <item.icon className="size-6 shrink-0" />}
@@ -93,7 +97,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
-                    {/* NavUser now handles its own state based on auth */}
                     <NavUser isActive={isProfileLoginSectionActive} />
                 </SidebarMenu>
             </SidebarContent>
