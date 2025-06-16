@@ -51,7 +51,7 @@ export async function deleteQuizAction(
       .where("userId", "==", currentUserId);
     const resultsSnapshotAdmin = await resultsQueryAdmin.get();
     if (!resultsSnapshotAdmin.empty) {
-      resultsSnapshotAdmin.docs.forEach((resultDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>) => {
+      resultsSnapshotAdmin.docs.forEach((resultDoc) => {
         batch.delete(resultDoc.ref);
       });
     }

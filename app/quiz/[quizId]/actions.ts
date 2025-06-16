@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb, verifyIdToken, adminAuth } from '@/lib/firebase-admin';
+import { adminDb, verifyIdToken, adminAppInstance } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore'; // For Admin SDK server timestamp
 import type { QuizData, QuizQuestion } from '@/types/quiz'; // Using plain TS types
 import { v4 as uuidv4 } from 'uuid';
@@ -22,8 +21,8 @@ export async function cloneQuizAction(
     return { error: "Original Quiz ID is required." };
   }
 
-  if (!adminAuth) {
-    console.error("[SERVER ACTION cloneQuizAction] Firebase Admin Auth SDK (adminAuth) is not initialized. Cannot verify token. Check server startup logs for 'firebase-admin.ts'.");
+  if (!adminAppInstance) {
+    console.error("[SERVER ACTION cloneQuizAction] Firebase Admin App SDK (adminAppInstance) is not initialized. Cannot verify token. Check server startup logs for 'firebase-admin.ts'.");
     return { error: "Server authentication service is not configured. Please contact support." };
   }
   if (!adminDb) {
