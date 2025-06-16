@@ -161,19 +161,19 @@ export default function HistoryPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Correct Answers</CardTitle>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-500">{stats.totalCorrectAnswers}</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalCorrectAnswers}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Overall Accuracy</CardTitle>
-                  <XCircle className="h-5 w-5 text-red-500" /> 
+                  <XCircle className="h-5 w-5 text-primary" /> 
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-red-500">{stats.overallAccuracy}%</div>
+                  <div className="text-3xl font-bold text-primary">{stats.overallAccuracy}%</div>
                   <p className="text-xs text-muted-foreground">
                     Based on {stats.totalQuestionsAnswered} questions
                   </p>
@@ -191,8 +191,8 @@ export default function HistoryPage() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} />
+                      <XAxis dataKey="name" stroke="hsl(var(--primary))" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="hsl(var(--primary))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--background))",

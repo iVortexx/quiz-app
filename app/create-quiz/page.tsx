@@ -30,7 +30,7 @@ export default function CreateQuizPage() {
   const [progressValue, setProgressValue] = useState(0)
   const [isSaving, setIsSaving] = useState(false); // For client-side saving indicator
   const [errorDetails, setErrorDetails] = useState<{
-    type: 'file' | 'ai' | 'storage' | 'general';
+    type: 'file' | 'ai' | 'storage' | 'general' | 'payload';
     message: string;
     details?: string;
   } | null>(null);
@@ -124,10 +124,14 @@ export default function CreateQuizPage() {
     if (formState?.error) {
       // Parse the error message to determine the type
       let errorMessage = formState.error;
-      let errorType: 'file' | 'ai' | 'storage' | 'general' = 'general';
+      let errorType: 'file' | 'ai' | 'storage' | 'general' | 'payload' = 'general'; // Add 'payload' type
       let details = '';
 
-      if (errorMessage.includes('PDF') || errorMessage.includes('file')) {
+      if (errorMessage.includes('Content Too Large') || errorMessage.includes('Request Entity Too Large') || errorMessage.includes('413')) {
+        errorType = 'payload';
+        errorMessage = "Quiz data is too large.";
+        details = "Please reduce the size of your PDF or the number of questions requested.";
+      } else if (errorMessage.includes('PDF') || errorMessage.includes('file')) {
         errorType = 'file';
       } else if (errorMessage.includes('AI') || errorMessage.includes('generation')) {
         errorType = 'ai';
@@ -135,8 +139,8 @@ export default function CreateQuizPage() {
         errorType = 'storage';
       }
 
-      // Extract additional details if available
-      if (errorMessage.includes(':')) {
+      // Extract additional details if available (only if not a payload error, as we set custom details)
+      if (errorType !== 'payload' && errorMessage.includes(':')) {
         const [mainMessage, detail] = errorMessage.split(':');
         details = detail.trim();
         errorMessage = mainMessage.trim();
@@ -228,11 +232,14 @@ export default function CreateQuizPage() {
         <Card>
           <CardHeader>
             <CardTitle>Create Quiz</CardTitle>
-            <CardDescription>Upload a PDF document to generate a quiz</CardDescription>
+            <CardDescription>
+              Upload a PDF document to generate a quiz. Keep PDFs concise and limit question count for faster processing and to avoid issues with large quizzes.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
+              <p className="text-muted-foreground text-sm mb-2">Max file size: 50MB. Larger documents or higher question counts may take longer or fail due to processing limits.</p>
               <div
                 className={cn(
                   "rounded-lg p-6 text-center transition-all duration-300 ease-in-out",
@@ -265,16 +272,19 @@ export default function CreateQuizPage() {
                 <Alert variant={errorDetails.type === 'general' ? 'destructive' : 'default'} className={cn(
                   errorDetails.type === 'file' && 'border-yellow-500 bg-yellow-500/10',
                   errorDetails.type === 'ai' && 'border-orange-500 bg-orange-500/10',
-                  errorDetails.type === 'storage' && 'border-red-500 bg-red-500/10'
+                  errorDetails.type === 'storage' && 'border-red-500 bg-red-500/10',
+                  errorDetails.type === 'payload' && 'border-purple-600 bg-purple-600/10 dark:border-purple-400 dark:bg-purple-400/10'
                 )}>
                   {errorDetails.type === 'file' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
                   {errorDetails.type === 'ai' && <AlertTriangle className="h-4 w-4 text-orange-500" />}
                   {errorDetails.type === 'storage' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                  {errorDetails.type === 'payload' && <AlertCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
                   {errorDetails.type === 'general' && <AlertCircle className="h-4 w-4" />}
                   <AlertTitle className={cn(
                     errorDetails.type === 'file' && 'text-yellow-500',
                     errorDetails.type === 'ai' && 'text-orange-500',
-                    errorDetails.type === 'storage' && 'text-red-500'
+                    errorDetails.type === 'storage' && 'text-red-500',
+                    errorDetails.type === 'payload' && 'text-purple-600 dark:text-purple-400'
                   )}>
                     {errorDetails.message}
                   </AlertTitle>
@@ -282,7 +292,8 @@ export default function CreateQuizPage() {
                     <AlertDescription className={cn(
                       errorDetails.type === 'file' && 'text-yellow-500/80',
                       errorDetails.type === 'ai' && 'text-orange-500/80',
-                      errorDetails.type === 'storage' && 'text-red-500/80'
+                      errorDetails.type === 'storage' && 'text-red-500/80',
+                      errorDetails.type === 'payload' && 'text-purple-600/80 dark:text-purple-400/80'
                     )}>
                       {errorDetails.details}
                     </AlertDescription>
