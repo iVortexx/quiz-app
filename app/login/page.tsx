@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
-import { auth } from '@/src/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/auth-context';
 import { QuizifyButton } from '@/components/custom/Quizify-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

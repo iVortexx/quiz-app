@@ -260,16 +260,19 @@ function SidebarTrigger({
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("size-7", className)}
+      variant="outline" // Changed from ghost for better visibility
+      size="icon"     // Standard icon button size (h-9 w-9 by default)
+      className={cn(
+        "m-3 rounded-md bg-background/50 text-foreground shadow-sm backdrop-blur-sm hover:bg-accent/80", // Enhanced styling
+        className // Keep this for any external overrides
+      )}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon /> {/* Icon will be size-4 (1rem) due to Button's default SVG sizing */}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -713,3 +716,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+

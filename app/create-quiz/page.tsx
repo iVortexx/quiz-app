@@ -12,9 +12,9 @@ import { Progress } from "@/components/ui/progress"
 import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { createQuizAction } from "./actions"
-import type { QuizData } from "@/src/ai/flows/create-quiz-flow"
+import type { QuizData } from "@/ai/flows/create-quiz-flow"
 import { useAuth } from "@/contexts/auth-context"
-import { db } from "@/src/lib/firebase" // Import db for client-side write
+import { db } from "@/lib/firebase" // Import db for client-side write
 import { doc, setDoc, serverTimestamp } from "firebase/firestore" // Import Firestore functions
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
