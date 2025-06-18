@@ -4,6 +4,8 @@
 import { z } from 'genkit';
 import { createQuiz, type CreateQuizInput, type QuizData } from '@/ai/flows/create-quiz-flow';
 import { uploadPdf } from '@/lib/firebase';
+import { upload_limit, questions_range } from "@/config/upload";
+
 
 // Helper function to convert File to Data URI
 async function fileToDataUri(file: File): Promise<string> {
@@ -79,9 +81,9 @@ export async function createQuizAction(
       console.error("createQuizAction: Error - Invalid file type. Only PDF is allowed. Type:", file.type);
       return { error: 'Invalid file type. Only PDF is allowed.' };
     }
-    if (file.size > 50 * 1024 * 1024) { // Increased to 50MB
-      console.error("createQuizAction: Error - File is too large. Maximum size is 50MB. File size:", file.size);
-      return { error: "File is too large. Maximum size is 50MB. Please try with a smaller file or split your PDF." };
+    if (file.size > upload_limit * 1024 * 1024) { // PDF upload size limit determined by upload_limit constant
+      console.error(`createQuizAction: Error - File is too large. Maximum size is ${upload_limit}MB. File size: ${file.size}`);
+      return { error: `File is too large. Maximum size is ${upload_limit}MB. Please try with a smaller file or split your PDF.` };
     }
     if (!questionCountStr) {
       console.error("createQuizAction: Error - Number of questions not specified.");
@@ -89,9 +91,9 @@ export async function createQuizAction(
     }
 
     const questionCount = parseInt(questionCountStr, 10);
-    if (isNaN(questionCount) || questionCount < 1 || questionCount > 50) {
-      console.error("createQuizAction: Error - Invalid number of questions. Must be between 1 and 50. Value:", questionCountStr);
-      return { error: 'Invalid number of questions. Must be between 1 and 50.' };
+    if (isNaN(questionCount) || questionCount < questions_range[0] || questionCount > questions_range[1]) {
+      console.error(`createQuizAction: Error - Invalid number of questions. Must be between ${questions_range[0]} and ${questions_range[1]}. Value:`, questionCountStr);
+      return { error: `Invalid number of questions. Must be between ${questions_range[0]} and ${questions_range[1]}.` };
     }
     console.log(`createQuizAction: File details - Name: ${file.name}, Size: ${file.size}, Type: ${file.type}. Question count: ${questionCount}`);
     console.log("createQuizAction: Initial checks passed.");
