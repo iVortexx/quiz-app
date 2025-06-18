@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, BarChartHorizontalBig, AlertTriangle, Percent, ListChecks, CheckCircle, XCircle } from "lucide-react"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import toast from "react-hot-toast"
-import type { QuizQuestion } from "@/ai/flows/create-quiz-flow" // Reusing this type for question structure if needed
+import type { QuizQuestion } from "@/ai/flows/create-quiz-flow"
 
 interface StoredQuizResult {
   id: string;
@@ -20,7 +20,7 @@ interface StoredQuizResult {
   total: number;
   quizTitle?: string;
   submittedAt: Timestamp; 
-  questionsSnapshot?: QuizQuestion[]; // Optional, as it might be heavy
+  questionsSnapshot?: QuizQuestion[];
 }
 
 interface ChartData {
@@ -36,7 +36,6 @@ const formatDate = (timestamp: Timestamp | undefined) => {
     year: "numeric",
   });
 };
-
 
 export default function HistoryPage() {
   const { user, loading: authLoading } = useAuth();
@@ -89,7 +88,7 @@ export default function HistoryPage() {
               overallAccuracy: accuracy,
             });
 
-            const recentResultsForChart = results.slice(0, 10).reverse(); // Last 10, reversed for chronological chart
+            const recentResultsForChart = results.slice(0, 10).reverse();
             setChartData(
               recentResultsForChart.map(r => ({
                 name: r.quizTitle || `Quiz ${formatDate(r.submittedAt)}`,
@@ -143,38 +142,38 @@ export default function HistoryPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Quizzes Taken</CardTitle>
-                  <ListChecks className="h-5 w-5 text-muted-foreground" />
+                  <ListChecks className="h-5 w-5 text-[#a78bfa]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalQuizzesTaken}</div>
+                  <div className="text-3xl font-bold text-[#7c3aed]">{stats.totalQuizzesTaken}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                  <Percent className="h-5 w-5 text-muted-foreground" />
+                  <Percent className="h-5 w-5 text-[#a78bfa]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.averageScore}%</div>
+                  <div className="text-3xl font-bold text-[#7c3aed]">{stats.averageScore}%</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Correct Answers</CardTitle>
-                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <CheckCircle className="h-5 w-5 text-[#a78bfa]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-primary">{stats.totalCorrectAnswers}</div>
+                  <div className="text-3xl font-bold text-[#7c3aed]">{stats.totalCorrectAnswers}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Overall Accuracy</CardTitle>
-                  <XCircle className="h-5 w-5 text-primary" /> 
+                  <XCircle className="h-5 w-5 text-[#a78bfa]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-primary">{stats.overallAccuracy}%</div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="text-3xl font-bold text-[#7c3aed]">{stats.overallAccuracy}%</div>
+                  <p className="text-xs text-[#a78bfa]">
                     Based on {stats.totalQuestionsAnswered} questions
                   </p>
                 </CardContent>
@@ -190,21 +189,38 @@ export default function HistoryPage() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="name" stroke="hsl(var(--primary))" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="hsl(var(--primary))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ddd6fe" />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#7c3aed" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                      />
+                      <YAxis 
+                        stroke="#7c3aed" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tickFormatter={(value) => `${value}%`} 
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--background))",
                           borderColor: "hsl(var(--border))",
                           borderRadius: "var(--radius)",
                         }}
-                        labelStyle={{ color: "hsl(var(--foreground))" }}
-                        itemStyle={{ color: "hsl(var(--primary))" }}
-                        cursor={{ fill: "hsl(var(--accent))", fillOpacity: 0.5 }}
+/*                         labelStyle={{ color: "#7c3aed" }}
+                        itemStyle={{ color: "#7c3aed" }} */
+                        cursor={{ fill: "#a78bfa", fillOpacity: 0.5 }}
                       />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      <Bar dataKey="score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Legend wrapperStyle={{ fontSize: "12px", color: "#7c3aed" }} />
+                      <Bar 
+                        dataKey="score" 
+                        fill="#66cccc" 
+                        radius={[4, 4, 0, 0]} 
+                        barSize={30} 
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>

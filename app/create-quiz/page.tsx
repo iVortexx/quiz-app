@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useEffect, useTransition, useActionState } from "react"
 import { useRouter } from "next/navigation"
 import { QuizifyButton } from "@/components/custom/Quizify-button"
@@ -14,11 +14,11 @@ import { cn } from "@/lib/utils"
 import { createQuizAction } from "./actions"
 import type { QuizData } from "@/ai/flows/create-quiz-flow"
 import { useAuth } from "@/contexts/auth-context"
-import { db } from "@/lib/firebase" // Import db for client-side write
-import { doc, setDoc, serverTimestamp } from "firebase/firestore" // Import Firestore functions
+import { db } from "@/lib/firebase"
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { PDFDocument } from 'pdf-lib';
 
-// Updated initial state to reflect changes in action's return type
 const initialState: { quiz?: QuizData; pdfStorageUrl?: string; error?: string; message?: string } = {};
 
 export default function CreateQuizPage() {
@@ -28,15 +28,18 @@ export default function CreateQuizPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [questionCount, setQuestionCount] = useState("10")
   const [progressValue, setProgressValue] = useState(0)
-  const [isSaving, setIsSaving] = useState(false); // For client-side saving indicator
+  const [isSaving, setIsSaving] = useState(false);
   const [errorDetails, setErrorDetails] = useState<{
     type: 'file' | 'ai' | 'storage' | 'general' | 'payload';
     message: string;
     details?: string;
   } | null>(null);
 
-  const [isPendingAction, startTransition] = useTransition(); // Renamed for clarity
+  const [isPendingAction, startTransition] = useTransition();
   const [formState, formAction] = useActionState(createQuizAction, initialState);
+
+  // Progress interval ref so we can clear it properly
+  const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,14 +47,41 @@ export default function CreateQuizPage() {
     }
   }, [user, authLoading, router]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    setErrorDetails(null); // Clear any previous errors
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setErrorDetails(null);
+
     if (file) {
       if (file.type === "application/pdf") {
-        if (file.size <= 50 * 1024 * 1024) { // Updated to 50MB
-          setSelectedFile(file)
-          setProgressValue(0);
+        if (file.size <= 50 * 1024 * 1024) {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            const pageCount = pdfDoc.getPageCount();
+
+            if (pageCount > 200) {
+              setErrorDetails({
+                type: 'file',
+                message: "PDF is too long",
+                details: "Maximum 200 pages allowed. Please split your PDF into smaller sections."
+              });
+              setSelectedFile(null);
+              event.target.value = "";
+              return;
+            }
+
+            setSelectedFile(file);
+            setProgressValue(0);
+          } catch (error) {
+            console.error("Error reading PDF:", error);
+            setErrorDetails({
+              type: 'file',
+              message: "Error reading PDF",
+              details: "Could not verify PDF contents. Please try a different file."
+            });
+            setSelectedFile(null);
+            event.target.value = "";
+          }
         } else {
           setErrorDetails({
             type: 'file',
@@ -59,7 +89,7 @@ export default function CreateQuizPage() {
             details: "Maximum size is 50MB. Please try with a smaller file or split your PDF."
           });
           setSelectedFile(null);
-          event.target.value = ""
+          event.target.value = "";
         }
       } else {
         setErrorDetails({
@@ -68,7 +98,7 @@ export default function CreateQuizPage() {
           details: "Please select a PDF file."
         });
         setSelectedFile(null);
-        event.target.value = ""
+        event.target.value = "";
       }
     } else {
       setSelectedFile(null);
@@ -76,26 +106,22 @@ export default function CreateQuizPage() {
   }
 
   useEffect(() => {
-    // This effect handles the result from the server action
     if (formState?.message && !formState.error && formState.quiz && user) {
-      // AI part done, now save to Firestore from client
       const saveData = async () => {
         setIsSaving(true);
         toast.loading("Saving quiz to database...", { id: "saving-toast" });
 
-        // Ensure all fields expected by QuizData are present or correctly handled
         const quizDataFromAI = formState.quiz!;
 
         const quizToSave = {
           id: quizDataFromAI.id,
           title: quizDataFromAI.title,
-          description: quizDataFromAI.description, // Optional, from AI
+          description: quizDataFromAI.description,
           questionCount: quizDataFromAI.questionCount,
           questions: quizDataFromAI.questions,
-          userId: user.uid, // Add authenticated user's ID
-          createdAt: serverTimestamp(), // Use Firestore server timestamp
-          isPublic: true, // Default to public
-          // Conditionally add pdfStorageUrl
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+          isPublic: true,
           ...(formState.pdfStorageUrl && { pdfStorageUrl: formState.pdfStorageUrl }),
         };
 
@@ -116,15 +142,14 @@ export default function CreateQuizPage() {
       saveData();
     }
     if (formState?.error) {
-      toast.error(formState.error); // Error from server action (AI generation part)
+      toast.error(formState.error);
     }
   }, [formState, router, user]);
 
   useEffect(() => {
     if (formState?.error) {
-      // Parse the error message to determine the type
       let errorMessage = formState.error;
-      let errorType: 'file' | 'ai' | 'storage' | 'general' | 'payload' = 'general'; // Add 'payload' type
+      let errorType: 'file' | 'ai' | 'storage' | 'general' | 'payload' = 'general';
       let details = '';
 
       if (errorMessage.includes('Content Too Large') || errorMessage.includes('Request Entity Too Large') || errorMessage.includes('413')) {
@@ -139,7 +164,6 @@ export default function CreateQuizPage() {
         errorType = 'storage';
       }
 
-      // Extract additional details if available (only if not a payload error, as we set custom details)
       if (errorType !== 'payload' && errorMessage.includes(':')) {
         const [mainMessage, detail] = errorMessage.split(':');
         details = detail.trim();
@@ -153,6 +177,15 @@ export default function CreateQuizPage() {
       });
     }
   }, [formState?.error]);
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,40 +209,44 @@ export default function CreateQuizPage() {
     formData.append('questionCount', questionCount);
     formData.append('userId', user.uid);
 
-    let progressInterval: NodeJS.Timeout | undefined;
-    if (isPendingAction) { // Use isPendingAction for AI generation progress
-      setProgressValue(0);
-      progressInterval = setInterval(() => {
-        setProgressValue((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval as NodeJS.Timeout);
-            return 90;
-          }
-          return prev + Math.random() * 10;
-        });
-      }, 300);
+    // Reset progress and clear any existing interval
+    setProgressValue(0);
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
     }
+
+    // Start new interval for progress animation
+    progressIntervalRef.current = setInterval(() => {
+      setProgressValue((prev) => {
+        if (prev >= 90) {
+          return 90; // Cap at 90% while waiting for server response
+        }
+        return prev + Math.random() * 10;
+      });
+    }, 300);
 
     startTransition(() => {
-      formAction(formData); // Call server action
+      formAction(formData);
     });
-
-    return () => {
-      if (progressInterval) clearInterval(progressInterval);
-    };
   };
 
+  // Effect to handle progress completion
   useEffect(() => {
-    // This effect manages progress bar based on server action's pending state
-    if (!isPendingAction && (formState?.quiz || formState?.error)) { // If action is done (success or error)
-      setProgressValue(100);
-      // If successful, saving starts, progress can remain or show saving state
-      // If error, progress resets.
-      if (formState?.error || (!formState?.quiz && !isSaving)) {
-        setTimeout(() => setProgressValue(0), 1000); // Reset progress after error or if no saving happens
+    if (!isPendingAction) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      
+      if (formState?.quiz) {
+        // If we have quiz data, set to 100% (saving will handle its own progress)
+        setProgressValue(100);
+      } else if (formState?.error) {
+        // On error, reset progress after a delay
+        setTimeout(() => setProgressValue(0), 1000);
       }
     }
-  }, [isPendingAction, formState, isSaving]);
+  }, [isPendingAction, formState]);
 
   if (authLoading || (!authLoading && !user)) {
     return (
@@ -233,13 +270,17 @@ export default function CreateQuizPage() {
           <CardHeader>
             <CardTitle>Create Quiz</CardTitle>
             <CardDescription>
-              Upload a PDF document to generate a quiz. Keep PDFs concise and limit question count for faster processing and to avoid issues with large quizzes.
+              Upload a PDF document to generate a quiz. Keep PDFs concise and limit question count for faster processing.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
-              <p className="text-muted-foreground text-sm mb-2">Max file size: 50MB. Larger documents or higher question counts may take longer or fail due to processing limits.</p>
+              <div>
+                <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
+                <p className="text-muted-foreground text-sm">
+                  Max file size: 50MB, max 200 pages. Larger documents may take longer or fail due to processing limits.
+                </p>
+              </div>
               <div
                 className={cn(
                   "rounded-lg p-6 text-center transition-all duration-300 ease-in-out",
@@ -262,7 +303,7 @@ export default function CreateQuizPage() {
                     <div className="flex flex-col items-center justify-center">
                       <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-md font-medium text-foreground/90">Click to upload or drag and drop</p>
-                      <p className="text-sm text-muted-foreground mt-1">PDF files only (max 10MB)</p>
+                      <p className="text-sm text-muted-foreground mt-1">PDF files only (max 50MB)</p>
                     </div>
                   )}
                 </label>
@@ -320,23 +361,15 @@ export default function CreateQuizPage() {
                 />
               </div>
 
-              {isPendingAction && (
+              {(isPendingAction || isSaving) && (
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center space-x-3">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="text-md text-muted-foreground">Generating quiz content... This may take a moment.</span>
+                    <span className="text-md text-muted-foreground">
+                      {isPendingAction ? "Generating quiz content..." : "Saving quiz to database..."}
+                    </span>
                   </div>
                   <Progress value={progressValue} className="w-full h-2.5" />
-                </div>
-              )}
-
-              {isSaving && (
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center space-x-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="text-md text-muted-foreground">Saving quiz to database...</span>
-                  </div>
-                  <Progress value={progressValue < 100 ? 95 : 100} className="w-full h-2.5" />
                 </div>
               )}
 

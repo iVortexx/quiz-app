@@ -15,7 +15,7 @@ export default function HomePage() {
                 <span className="text-violet-600">Q</span>UIZIFY
               </span>
               <span className="hidden sm:block text-gray-900 dark:text-white"> - </span>
-              <span className="text-white bg-gradient-to-l from-violet-500 to-purple-500 p-1 pl-6 backdrop-blur-lg rounded-lg border-violet-500 border-1 shadow-violet-500 shadow-xl antialiased glow-text ml-2">
+              <span className="text-white bg-gradient-to-l from-violet-500 to-purple-500 p-1 pl-6 backdrop-blur-lg rounded-lg border-violet-500 border-1 shadow-violet-500/30 shadow-xl antialiased glow-text ml-2">
                 AI-Powered ✨
               </span>
               <span className="text-gray-900 dark:text-white">Quiz Generator</span>
