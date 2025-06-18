@@ -18,6 +18,7 @@ import { db } from "@/lib/firebase"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PDFDocument } from 'pdf-lib';
+import { upload_limit, questions_range, pages_limit } from "@/config/upload";
 
 const initialState: { quiz?: QuizData; pdfStorageUrl?: string; error?: string; message?: string } = {};
 
@@ -53,17 +54,17 @@ export default function CreateQuizPage() {
 
     if (file) {
       if (file.type === "application/pdf") {
-        if (file.size <= 50 * 1024 * 1024) {
+        if (file.size <= upload_limit * 1024 * 1024) {
           try {
             const arrayBuffer = await file.arrayBuffer();
             const pdfDoc = await PDFDocument.load(arrayBuffer);
             const pageCount = pdfDoc.getPageCount();
 
-            if (pageCount > 200) {
+            if (pageCount > pages_limit) {
               setErrorDetails({
                 type: 'file',
                 message: "PDF is too long",
-                details: "Maximum 200 pages allowed. Please split your PDF into smaller sections."
+                details: `Maximum ${pages_limit} pages allowed. Please split your PDF into smaller sections.`
               });
               setSelectedFile(null);
               event.target.value = "";
@@ -86,7 +87,7 @@ export default function CreateQuizPage() {
           setErrorDetails({
             type: 'file',
             message: "File is too large",
-            details: "Maximum size is 50MB. Please try with a smaller file or split your PDF."
+            details: `Maximum size is ${upload_limit}MB. Please try with a smaller file or split your PDF.`
           });
           setSelectedFile(null);
           event.target.value = "";
@@ -199,8 +200,8 @@ export default function CreateQuizPage() {
       return
     }
     const count = Number.parseInt(questionCount)
-    if (count < 1 || count > 50) {
-      toast.error("Please enter a number between 1 and 50.")
+    if (count < questions_range[0] || count > questions_range[1]) {
+      toast.error(`Please enter a number between ${questions_range[0]} and ${questions_range[1]}.`)
       return
     }
 
@@ -278,7 +279,7 @@ export default function CreateQuizPage() {
               <div>
                 <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
                 <p className="text-muted-foreground text-sm">
-                  Max file size: 50MB, max 200 pages. Larger documents may take longer or fail due to processing limits.
+                  Max file size: {upload_limit}MB, max 200 pages. Larger documents may take longer or fail due to processing limits.
                 </p>
               </div>
               <div
@@ -303,7 +304,7 @@ export default function CreateQuizPage() {
                     <div className="flex flex-col items-center justify-center">
                       <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-md font-medium text-foreground/90">Click to upload or drag and drop</p>
-                      <p className="text-sm text-muted-foreground mt-1">PDF files only (max 50MB)</p>
+                      <p className="text-sm text-muted-foreground mt-1">PDF files only (max {upload_limit}MB)</p>
                     </div>
                   )}
                 </label>
