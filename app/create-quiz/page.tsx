@@ -279,7 +279,7 @@ export default function CreateQuizPage() {
               <div>
                 <Label htmlFor="pdf-upload" className="text-md font-medium">Upload PDF Document</Label>
                 <p className="text-muted-foreground text-sm">
-                  Max file size: {upload_limit}MB, max 200 pages. Larger documents may take longer or fail due to processing limits.
+                  Max file size: {upload_limit}MB, max {pages_limit} pages. Larger documents may take longer or fail due to processing limits.
                 </p>
               </div>
               <div

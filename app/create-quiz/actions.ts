@@ -81,7 +81,7 @@ export async function createQuizAction(
       console.error("createQuizAction: Error - Invalid file type. Only PDF is allowed. Type:", file.type);
       return { error: 'Invalid file type. Only PDF is allowed.' };
     }
-    if (file.size > upload_limit * 1024 * 1024) { // ? Pdf upload size limit
+    if (file.size > upload_limit * 1024 * 1024) { // PDF upload size limit determined by upload_limit constant
       console.error(`createQuizAction: Error - File is too large. Maximum size is ${upload_limit}MB. File size: ${file.size}`);
       return { error: `File is too large. Maximum size is ${upload_limit}MB. Please try with a smaller file or split your PDF.` };
     }
